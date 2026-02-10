@@ -12,7 +12,7 @@ jobs:
   markdown-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # TODO: Install markdownlint-cli and run (e.g. markdownlint '**/*.md')
       - name: Run markdown lint
