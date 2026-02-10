@@ -1,0 +1,27 @@
+# Placeholder: run pre-commit hooks in CI
+# TODO: Add .pre-commit-config.yaml and install pre-commit
+name: precommit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  precommit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # TODO: Install pre-commit and run all hooks
+      - name: Run pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit --version
+          echo "Add: pre-commit run --all-files (after adding .pre-commit-config.yaml)"

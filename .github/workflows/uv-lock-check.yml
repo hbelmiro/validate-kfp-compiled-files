@@ -1,0 +1,27 @@
+# Placeholder: ensure uv.lock is in sync with pyproject.toml
+# TODO: Add pyproject.toml and uv.lock; then uncomment and use uv
+name: uv-lock-check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  uv-lock-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: Install uv and run `uv lock --check` (requires pyproject.toml)
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          uv --version
+
+      - name: Check lock file
+        run: |
+          echo "Add: uv lock --check (after adding pyproject.toml and uv.lock)"

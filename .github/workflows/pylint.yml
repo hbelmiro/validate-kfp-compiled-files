@@ -1,0 +1,27 @@
+# Placeholder: run pylint on Python code
+# TODO: Add pylint config (e.g. .pylintrc, pyproject.toml [tool.pylint])
+name: pylint
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # TODO: Install deps (pip/uv) and run pylint
+      - name: Run pylint
+        run: |
+          pip install pylint
+          pylint --version
+          echo "Add pylint targets here (e.g. pylint src/ or pylint **/*.py)"

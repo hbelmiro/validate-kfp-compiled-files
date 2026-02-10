@@ -1,0 +1,20 @@
+# Placeholder: run tests
+# TODO: Add test command (e.g. pytest, or verify_kfp_compiled.sh)
+name: test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: Set up runtime (Python/Node/etc.) and run tests
+      - name: Run tests
+        run: |
+          echo "Add test steps here (e.g. pytest, or ./verify_kfp_compiled.sh ...)"
