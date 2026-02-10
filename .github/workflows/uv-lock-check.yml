@@ -12,7 +12,7 @@ jobs:
   uv-lock-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # TODO: Install uv and run `uv lock --check` (requires pyproject.toml)
       - name: Install uv
