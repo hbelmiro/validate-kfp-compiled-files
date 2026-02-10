@@ -1,0 +1,25 @@
+# Placeholder: Dependabot version updates
+# Dependabot runs on its own schedule; this file enables and configures it.
+# TODO: Adjust package_ecosystem and directories for your repo
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Python (pip) – enable when using requirements.txt or pyproject.toml
+  # - package-ecosystem: "pip"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   open-pull-requests-limit: 5
+
+  # npm – enable if you add package.json
+  # - package-ecosystem: "npm"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   open-pull-requests-limit: 5
