@@ -1,5 +1,3 @@
-# Placeholder: run pre-commit hooks in CI
-# TODO: Add .pre-commit-config.yaml and install pre-commit
 name: precommit
 
 on:
@@ -14,14 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
-      # TODO: Install pre-commit and run all hooks
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: uv sync --group ci
+
       - name: Run pre-commit
-        run: |
-          pip install pre-commit
-          pre-commit --version
-          echo "Add: pre-commit run --all-files (after adding .pre-commit-config.yaml)"
+        run: uv run pre-commit run --all-files

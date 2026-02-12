@@ -18,14 +18,8 @@ runs:
   steps:
     - name: Install Python dependencies
       shell: bash
-      run: pip install -r ${{ inputs.requirements-file }}
-
-    - name: Install jq (for JSON parsing)
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y jq
+      run: pip install -r "${{ inputs.requirements-file }}"
 
     - name: Verify compiled pipelines
       shell: bash
-      run: $GITHUB_ACTION_PATH/verify_kfp_compiled.sh ${{ inputs.pipelines-map-file }} ${{ inputs.extra-compile-args || '' }}
+      run: python "${{ github.action_path }}/verify_kfp_compiled.py" "${{ inputs.pipelines-map-file }}" "${{ inputs.extra-compile-args || '' }}"

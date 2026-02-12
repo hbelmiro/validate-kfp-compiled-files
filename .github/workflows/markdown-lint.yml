@@ -1,5 +1,3 @@
-# Placeholder: run markdown lint
-# TODO: Add markdownlint config (e.g. .markdownlint.yaml)
 name: markdown-lint
 
 on:
@@ -14,9 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # TODO: Install markdownlint-cli and run (e.g. markdownlint '**/*.md')
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
       - name: Run markdown lint
-        run: |
-          npm install -g markdownlint-cli
-          markdownlint --version
-          echo "Add markdownlint targets here (e.g. markdownlint '**/*.md' --ignore node_modules)"
+        run: markdownlint "**/*.md"
