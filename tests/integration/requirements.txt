@@ -346,9 +346,9 @@ kfp-pipeline-spec==2.14.0 \
 kfp-server-api==2.15.2 \
     --hash=sha256:e24493de35f56712bf0c9cdd3ce8df9b0c4f472a6f3b7111ee387b9f467c5c0e
     # via kfp
-kubernetes==30.1.0 \
-    --hash=sha256:41e4c77af9f28e7a6c314e3bd06a8c6229ddd787cad684e0ab9f69b498e98ebc \
-    --hash=sha256:e212e8b7579031dd2e512168b617373bc1e03888d41ac4e04039240a292d478d
+kubernetes==35.0.0 \
+    --hash=sha256:39e2b33b46e5834ef6c3985ebfe2047ab39135d41de51ce7641a7ca5b372a13d \
+    --hash=sha256:3d00d344944239821458b9efd484d6df9f011da367ecb155dadf9513f05f09ee
     # via kfp
 oauthlib==3.3.1 \
     --hash=sha256:0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9 \
