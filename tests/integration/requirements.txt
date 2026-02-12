@@ -335,9 +335,9 @@ idna==3.11 \
     --hash=sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea \
     --hash=sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902
     # via requests
-kfp==2.14.3 \
-    --hash=sha256:512c10d344b0efa0a18b342f86b56bb6ef0ccfb82f275ded51fdeb2a3ad4f199 \
-    --hash=sha256:53683dc31793f36391d35d711060f60d006a8f51b92d2c7debce13af8ebeba3b
+kfp==2.15.2 \
+    --hash=sha256:389933cbebdead61dd1eef538ff09d467048dc97edee2a70c80ca264506501cd \
+    --hash=sha256:5d522b522707d10fe1c2b42884f003a778794bb8d858e7a4e30545ab9dd7be97
     # via integration-env
 kfp-pipeline-spec==2.14.0 \
     --hash=sha256:569cee7743e7d99dc94fd4a8f33f292ef2e49bfd9a28d11833f2c6af3135f389 \

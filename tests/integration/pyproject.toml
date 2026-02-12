@@ -4,5 +4,5 @@ version = "0.0.0"
 description = "Pinned kfp env for integration test and for requirements-file input"
 requires-python = ">=3.9"
 dependencies = [
-  "kfp==2.14.3",
+  "kfp==2.15.2",
 ]
