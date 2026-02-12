@@ -8,16 +8,10 @@ updates:
       interval: "daily"
     open-pull-requests-limit: 5
 
-  # Python (uv: pyproject.toml + uv.lock)
+  # Python (uv: pyproject.toml + uv.lock + workspace members)
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
 
-  # Python integration tests (uv: tests/integration/pyproject.toml)
-  - package-ecosystem: "uv"
-    directory: "/tests/integration"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
