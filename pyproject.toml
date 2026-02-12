@@ -1,0 +1,50 @@
+[project]
+name = "validate-kfp-compiled-files"
+version = "0.2.0"
+description = "Validate that Kubeflow Pipelines .py files are compiled to their .yaml counterparts"
+readme = "README.md"
+requires-python = ">=3.9"
+
+[tool.uv.workspace]
+members = ["tests/integration"]
+
+[dependency-groups]
+# Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
+lint = [
+  "pylint==3.3.9; python_version < '3.10'",
+  "pylint==4.0.4; python_version >= '3.10'",
+  "ty==0.0.16",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+]
+ci = [
+  { include-group = "lint" },
+  { include-group = "test" },
+  "pre-commit",
+]
+dev = [
+  { include-group = "ci" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: run only with -m integration; requires kfp and kfp CLI (skipped if kfp compile fails).",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", ".venv/*", "**/integration/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+show_missing = true
+
+[tool.pylint.main]
+ignore-paths = [".venv", "tests/integration"]

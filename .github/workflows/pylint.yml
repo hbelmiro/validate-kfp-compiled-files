@@ -1,5 +1,3 @@
-# Placeholder: run pylint on Python code
-# TODO: Add pylint config (e.g. .pylintrc, pyproject.toml [tool.pylint])
 name: pylint
 
 on:
@@ -14,14 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
-      # TODO: Install deps (pip/uv) and run pylint
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group ci
+
       - name: Run pylint
-        run: |
-          pip install pylint
-          pylint --version
-          echo "Add pylint targets here (e.g. pylint src/ or pylint **/*.py)"
+        run: uv run pylint .

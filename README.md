@@ -1,8 +1,12 @@
 # ✅ Validate KFP Compiled Files
 
-A GitHub Action to validate that your [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/) Python scripts (`.py`) are correctly compiled into their corresponding YAML files (`.yaml`).
+A GitHub Action to validate that your
+[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/) Python
+scripts (`.py`) are correctly compiled into their corresponding YAML files
+(`.yaml`).
 
-This helps ensure consistency in CI pipelines by preventing out-of-date compiled pipeline definitions.
+This helps ensure consistency in CI pipelines by preventing out-of-date
+compiled pipeline definitions.
 
 ---
 
@@ -15,15 +19,19 @@ For each entry in a JSON mapping file (`.py` ➝ `.yaml`), this action:
 3. Diffs the compiled output with the existing YAML.
 4. Fails the workflow if differences are found.
 
+The action is implemented in Python (no `jq` or other system dependencies).
+It uses **pip** and the runner’s **Python** to install your `requirements-file`
+and run the verifier—**you do not need uv** or any other tool in your repo.
+
 ---
 
 ## 📦 Inputs
 
-| Name                 | Description                                           | Required |
-|----------------------|-------------------------------------------------------|----------|
-| `pipelines-map-file` | Path to the JSON file mapping `.py` ➝ `.yaml` files   | ✅ Yes    |
-| `requirements-file`  | Path to the `requirements.txt` file for `kfp` install | ✅ Yes    |
-| `extra-compile-args` | Extra arguments to pass to `kfp dsl compile` (optional) | ❌ No     |
+| Name                 | Description                             | Required   |
+|----------------------|-----------------------------------------|------------|
+| `pipelines-map-file` | Path to JSON mapping `.py` ➝ `.yaml`    | Yes        |
+| `requirements-file`  | Path to `requirements.txt` for `kfp`    | Yes        |
+| `extra-compile-args` | Extra args for `kfp dsl compile` (opt.) | No         |
 
 ---
 
@@ -55,3 +63,18 @@ jobs:
           requirements-file: './pipeline/requirements.txt'
           extra-compile-args: '--some-kfp-flag value'
 ```
+
+---
+
+## 🛠 Development
+
+This repo uses [uv](https://docs.astral.sh/uv/) for Python tooling.
+
+- Install dependencies (including dev): `uv sync --all-groups`
+- Run tests: `uv run pytest -v`
+- Test coverage: `uv run pytest --cov --cov-report=term-missing -m "not integration"`
+- Lint: `uv run pylint .`
+- Type check: `uv run ty check`
+- Check lock file: `uv lock --check`
+- Optional integration test (workspace `tests/integration`, pinned kfp):
+  `uv run pytest -v -m integration`

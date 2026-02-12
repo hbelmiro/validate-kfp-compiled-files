@@ -1,5 +1,3 @@
-# Placeholder: ensure uv.lock is in sync with pyproject.toml
-# TODO: Add pyproject.toml and uv.lock; then uncomment and use uv
 name: uv-lock-check
 
 on:
@@ -14,14 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # TODO: Install uv and run `uv lock --check` (requires pyproject.toml)
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          uv --version
+        uses: astral-sh/setup-uv@v4
 
       - name: Check lock file
-        run: |
-          echo "Add: uv lock --check (after adding pyproject.toml and uv.lock)"
+        uses: hbelmiro/uv-lock-check@v0.2.0
+
+      - name: Check integration requirements sync
+        uses: hbelmiro/uv-lock-check@v0.2.0
+        with:
+          command: uv export --package integration-env --format requirements-txt --no-emit-project -o tests/integration/requirements.txt
