@@ -1,8 +1,12 @@
-name: Fix Dependabot Requirements
+name: fix-dependabot-requirements
 
 on:
   pull_request:
-    paths: ['uv.lock', 'pyproject.toml', 'tests/integration/pyproject.toml']
+    paths: ['uv.lock', 'pyproject.toml']
+
+concurrency:
+  group: fix-dependabot-requirements-${{ github.head_ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -23,10 +27,12 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Regenerate requirements.txt
+        shell: bash
         run: uv export --package integration-env --format requirements-txt --no-emit-project -o tests/integration/requirements.txt
 
       - name: Check if requirements.txt changed
         id: check_changes
+        shell: bash
         run: |
           if ! git diff --quiet tests/integration/requirements.txt; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -38,9 +44,10 @@ jobs:
 
       - name: Commit updated requirements.txt
         if: steps.check_changes.outputs.changed == 'true'
+        shell: bash
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "Dependabot Requirements Updater"
           git add tests/integration/requirements.txt
           git commit -m "Auto-update integration requirements.txt"
           git push origin HEAD:${{ github.head_ref }}
