@@ -10,9 +10,13 @@ inputs:
   requirements-file:
     description: 'The requirements.txt file'
     required: true
-  extra-compile-args:
+  compile-args:
     description: 'Extra arguments to pass to kfp dsl compile (optional)'
     required: false
+  modified-only:
+    description: 'Only validate entries whose files are Git-modified'
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
@@ -22,4 +26,4 @@ runs:
 
     - name: Verify compiled pipelines
       shell: bash
-      run: python "${{ github.action_path }}/verify_kfp_compiled.py" "${{ inputs.pipelines-map-file }}" "${{ inputs.extra-compile-args || '' }}"
+      run: python "${{ github.action_path }}/verify_kfp_compiled.py" --map-file "${{ inputs.pipelines-map-file }}" --compile-args "${{ inputs.compile-args || '' }}" ${{ inputs.modified-only == 'true' && '--modified-only' || '' }}
