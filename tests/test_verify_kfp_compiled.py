@@ -4,13 +4,25 @@ import io
 import json
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+import verify_kfp_compiled
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "verify_kfp_compiled.py"
+
+
+@dataclass
+class RunConfig:
+    """Configuration for _run_main function."""
+    extra_args: str = ""
+    monkeypatch: pytest.MonkeyPatch | None = None
+    mock_subprocess_run: MagicMock | None = None
+    modified_only: bool = False
 
 
 def run_script(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -29,7 +41,7 @@ def run_script(*args: str, cwd: Path | None = None) -> subprocess.CompletedProce
 
 def test_missing_map_file_exits_nonzero(tmp_path: Path) -> None:
     """When the pipeline map file does not exist, script exits with 1."""
-    result = run_script(str(tmp_path / "nonexistent.json"))
+    result = run_script("--map-file", str(tmp_path / "nonexistent.json"))
     assert result.returncode == 1
     assert "Pipeline map file not found" in result.stdout
     assert "nonexistent.json" in result.stdout
@@ -39,7 +51,7 @@ def test_invalid_json_exits_nonzero(tmp_path: Path) -> None:
     """When the map file contains invalid JSON, script exits with 1."""
     map_file = tmp_path / "map.json"
     map_file.write_text("{ invalid }")
-    result = run_script(str(map_file))
+    result = run_script("--map-file", str(map_file))
     assert result.returncode == 1
     assert "Invalid JSON" in result.stdout
     assert "map.json" in result.stdout
@@ -49,7 +61,7 @@ def test_map_file_must_be_json_object(tmp_path: Path) -> None:
     """When the map file is valid JSON but not an object, script exits with 1."""
     map_file = tmp_path / "map.json"
     map_file.write_text("[1, 2, 3]")
-    result = run_script(str(map_file))
+    result = run_script("--map-file", str(map_file))
     assert result.returncode == 1
     assert "must be a JSON object" in result.stdout
 
@@ -58,7 +70,7 @@ def test_map_entries_must_be_strings(tmp_path: Path) -> None:
     """When the map has non-string key or value, script exits with 1."""
     map_file = tmp_path / "map.json"
     map_file.write_text('{"p.py": 123}')
-    result = run_script(str(map_file), cwd=tmp_path)
+    result = run_script("--map-file", str(map_file), cwd=tmp_path)
     assert result.returncode == 1
     assert "must be strings" in result.stdout or "non-string" in result.stdout
 
@@ -67,7 +79,7 @@ def test_empty_map_exits_zero(tmp_path: Path) -> None:
     """When the map is an empty object, script exits with 0."""
     map_file = tmp_path / "map.json"
     map_file.write_text("{}")
-    result = run_script(str(map_file))
+    result = run_script("--map-file", str(map_file))
     assert result.returncode == 0
 
 
@@ -76,7 +88,7 @@ def test_missing_py_file_exits_nonzero(tmp_path: Path) -> None:
     map_file = tmp_path / "map.json"
     map_file.write_text(json.dumps({"missing.py": "out.yaml"}))
     (tmp_path / "out.yaml").write_text("existing: yaml\n")
-    result = run_script(str(map_file), cwd=tmp_path)
+    result = run_script("--map-file", str(map_file), cwd=tmp_path)
     assert result.returncode == 1
     assert "Python file not found" in result.stdout
     assert "missing.py" in result.stdout
@@ -87,15 +99,15 @@ def test_missing_yaml_file_exits_nonzero(tmp_path: Path) -> None:
     map_file = tmp_path / "map.json"
     (tmp_path / "real.py").write_text("# dummy pipeline\n")
     map_file.write_text(json.dumps({"real.py": "missing.yaml"}))
-    result = run_script(str(map_file), cwd=tmp_path)
+    result = run_script("--map-file", str(map_file), cwd=tmp_path)
     assert result.returncode == 1
     assert "Expected YAML missing" in result.stdout
     assert "missing.yaml" in result.stdout
 
 
 def test_explicit_nonexistent_map_path_exits_nonzero(tmp_path: Path) -> None:
-    """With one arg (nonexistent path), script exits 1 and mentions that path."""
-    result = run_script(str(tmp_path / "no-such-map.json"))
+    """With --map-file pointing to nonexistent path, script exits 1."""
+    result = run_script("--map-file", str(tmp_path / "no-such-map.json"))
     assert result.returncode == 1
     assert "no-such-map.json" in result.stdout
 
@@ -137,31 +149,29 @@ def _fake_kfp_run(compiled_content: str):
     return _run
 
 
-def _run_main(
-    map_path: str | None = None,
-    extra_args: str = "",
-    monkeypatch: pytest.MonkeyPatch | None = None,
-    mock_subprocess_run: MagicMock | None = None,
-) -> tuple[int, str]:
+def _run_main(map_path: str | None = None, config: RunConfig | None = None) -> tuple[int, str]:
     """Run main() with given argv; return (exit_code, stdout). map_path=None => no args."""
-    import verify_kfp_compiled  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
+    if config is None:
+        config = RunConfig()
 
-    argv = [str(SCRIPT)] if map_path is None else [str(SCRIPT), map_path]
-    if extra_args:
-        argv.append(extra_args)
-    if monkeypatch is not None:
-        monkeypatch.setattr(sys, "argv", argv)
+    argv: list[str] = []
+    if map_path is not None:
+        argv.extend(["--map-file", map_path])
+    if config.extra_args:
+        argv.extend(["--compile-args", config.extra_args])
+    if config.modified_only:
+        argv.append("--modified-only")
 
     stdout_capture = io.StringIO()
-    if monkeypatch is not None:
-        monkeypatch.setattr(sys, "stdout", stdout_capture)
+    if config.monkeypatch is not None:
+        config.monkeypatch.setattr(sys, "stdout", stdout_capture)
 
     patch_target = "verify_kfp_compiled.subprocess.run"
-    if mock_subprocess_run is not None:
-        with patch(patch_target, mock_subprocess_run):
-            code = verify_kfp_compiled.main()
+    if config.mock_subprocess_run is not None:
+        with patch(patch_target, config.mock_subprocess_run):
+            code = verify_kfp_compiled.main(argv)
     else:
-        code = verify_kfp_compiled.main()
+        code = verify_kfp_compiled.main(argv)
 
     return code, stdout_capture.getvalue()
 
@@ -172,7 +182,7 @@ def test_map_not_found_in_process(
 ) -> None:
     """In-process: nonexistent map path exits 1 and prints message."""
     monkeypatch.chdir(tmp_path)
-    code, out = _run_main("no-such-map.json", monkeypatch=monkeypatch)
+    code, out = _run_main("no-such-map.json", RunConfig(monkeypatch=monkeypatch))
     assert code == 1
     assert "Pipeline map file not found" in out
     assert "no-such-map.json" in out
@@ -185,7 +195,7 @@ def test_invalid_json_in_process(
     """In-process: invalid JSON in map file exits 1."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "map.json").write_text("{ invalid }")
-    code, out = _run_main("map.json", monkeypatch=monkeypatch)
+    code, out = _run_main("map.json", RunConfig(monkeypatch=monkeypatch))
     assert code == 1
     assert "Invalid JSON" in out
 
@@ -196,7 +206,7 @@ def test_default_argv_in_process(
 ) -> None:
     """In-process: no args uses default map path and exits 1 when not found."""
     monkeypatch.chdir(tmp_path)
-    code, out = _run_main(map_path=None, monkeypatch=monkeypatch)
+    code, out = _run_main(map_path=None, config=RunConfig(monkeypatch=monkeypatch))
     assert code == 1
     assert ".github/kfp-pipelines-map.json" in out or "not found" in out
 
@@ -210,7 +220,7 @@ def test_missing_py_file_in_process(
     (tmp_path / "out.yaml").write_text("x: 1\n")
     map_file = tmp_path / "map.json"
     map_file.write_text(json.dumps({"missing.py": "out.yaml"}))
-    code, out = _run_main("map.json", monkeypatch=monkeypatch)
+    code, out = _run_main("map.json", RunConfig(monkeypatch=monkeypatch))
     assert code == 1
     assert "Python file not found" in out
     assert "missing.py" in out
@@ -225,7 +235,7 @@ def test_missing_yaml_file_in_process(
     (tmp_path / "real.py").write_text("# dummy\n")
     map_file = tmp_path / "map.json"
     map_file.write_text(json.dumps({"real.py": "missing.yaml"}))
-    code, out = _run_main("map.json", monkeypatch=monkeypatch)
+    code, out = _run_main("map.json", RunConfig(monkeypatch=monkeypatch))
     assert code == 1
     assert "Expected YAML missing" in out
     assert "missing.yaml" in out
@@ -250,8 +260,7 @@ def test_kfp_compile_failure_exits_nonzero(
 
     code, out = _run_main(
         "map.json",
-        monkeypatch=monkeypatch,
-        mock_subprocess_run=mock_run,
+        RunConfig(monkeypatch=monkeypatch, mock_subprocess_run=mock_run),
     )
     assert code == 1
     assert "kfp dsl compile failed" in out
@@ -268,8 +277,10 @@ def test_yaml_out_of_date_exits_nonzero(
 
     code, out = _run_main(
         "map.json",
-        monkeypatch=monkeypatch,
-        mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run("new: content\n")),
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run("new: content\n")),
+        ),
     )
     assert code == 1
     assert "out of date" in out
@@ -288,9 +299,11 @@ def test_yaml_out_of_date_includes_extra_args_in_fix_command(
 
     code, out = _run_main(
         "map.json",
-        extra_args="--pipeline-root gs://bucket",
-        monkeypatch=monkeypatch,
-        mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run("b: 2\n")),
+        RunConfig(
+            extra_args="--pipeline-root gs://bucket",
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run("b: 2\n")),
+        ),
     )
     assert code == 1
     assert "--pipeline-root gs://bucket" in out or "gs://bucket" in out
@@ -307,8 +320,10 @@ def test_yaml_up_to_date_exits_zero(
 
     code, out = _run_main(
         "map.json",
-        monkeypatch=monkeypatch,
-        mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run(content)),
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=MagicMock(side_effect=_fake_kfp_run(content)),
+        ),
     )
     assert code == 0
     assert "up to date" in out
@@ -326,14 +341,253 @@ def test_extra_args_passed_to_kfp(
     mock_run = MagicMock(side_effect=_fake_kfp_run(content))
     code, _ = _run_main(
         "map.json",
-        extra_args="--pipeline-root s3://bucket",
-        monkeypatch=monkeypatch,
-        mock_subprocess_run=mock_run,
+        RunConfig(
+            extra_args="--pipeline-root s3://bucket",
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+        ),
     )
     assert code == 0
     call_args = mock_run.call_args[0][0]
     assert "--pipeline-root" in call_args
     assert "s3://bucket" in call_args
+
+
+# ----- Git-modified-only tests -----
+
+
+def _make_dual_mock(
+    git_diff_output: str,
+    compiled_content: str,
+    *,
+    git_diff: tuple[int, str] = (0, ""),
+    git_fetch: tuple[int, str] = (0, ""),
+):
+    """Return a MagicMock that dispatches to git, kfp based on cmd."""
+
+    def _dispatch(
+        cmd: list[str], **_kwargs: object
+    ) -> subprocess.CompletedProcess:
+        if len(cmd) >= 2 and cmd[0] == "git":
+            if cmd[1] == "fetch":
+                return subprocess.CompletedProcess(
+                    cmd,
+                    returncode=git_fetch[0],
+                    stdout="",
+                    stderr=git_fetch[1],
+                )
+            if cmd[1] == "diff":
+                return subprocess.CompletedProcess(
+                    cmd,
+                    returncode=git_diff[0],
+                    stdout=git_diff_output,
+                    stderr=git_diff[1],
+                )
+        # kfp compile
+        try:
+            out_idx = cmd.index("--output")
+        except ValueError as exc:
+            msg = f"Unexpected command (no --output flag): {cmd}"
+            raise AssertionError(msg) from exc
+        if out_idx + 1 >= len(cmd):
+            msg = f"--output flag missing its value: {cmd}"
+            raise AssertionError(msg)
+        out_path = Path(cmd[out_idx + 1])
+        out_path.write_text(compiled_content, encoding="utf-8")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout="", stderr=""
+        )
+
+    return MagicMock(side_effect=_dispatch)
+
+
+def test_modified_only_filters_entries(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With --modified-only, only entries whose files appear in git diff are validated."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    content = "a: 1\n"
+    (tmp_path / "p1.py").write_text("# pipeline 1\n")
+    (tmp_path / "p1.yaml").write_text(content)
+    (tmp_path / "p2.py").write_text("# pipeline 2\n")
+    (tmp_path / "p2.yaml").write_text(content)
+    map_file = tmp_path / "map.json"
+    map_file.write_text(json.dumps({"p1.py": "p1.yaml", "p2.py": "p2.yaml"}))
+
+    mock_run = _make_dual_mock(git_diff_output="p1.py\n", compiled_content=content)
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 0
+    assert "p1.py" in out
+    assert "p2.py" not in out
+    assert "Validating 1 pipeline map entry" in out
+
+
+def test_modified_only_no_matches_exits_zero(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With --modified-only and no modified files matching the map, exit 0."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    (tmp_path / "p.py").write_text("# dummy\n")
+    (tmp_path / "p.yaml").write_text("a: 1\n")
+    map_file = tmp_path / "map.json"
+    map_file.write_text(json.dumps({"p.py": "p.yaml"}))
+
+    mock_run = _make_dual_mock(
+        git_diff_output="unrelated_file.txt\n", compiled_content="a: 1\n"
+    )
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 0
+    assert "nothing to validate" in out
+
+
+def test_modified_only_matches_yaml_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With --modified-only, modifying the .yaml file also triggers validation."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    content = "a: 1\n"
+    (tmp_path / "p.py").write_text("# dummy\n")
+    (tmp_path / "p.yaml").write_text(content)
+    map_file = tmp_path / "map.json"
+    map_file.write_text(json.dumps({"p.py": "p.yaml"}))
+
+    mock_run = _make_dual_mock(git_diff_output="p.yaml\n", compiled_content=content)
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 0
+    assert "up to date" in out
+
+
+def test_modified_only_reads_github_base_ref(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GITHUB_BASE_REF is normalised to origin/<branch> for fetch and merge-base diff."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    content = "a: 1\n"
+    _make_pipeline_map(tmp_path, yaml_content=content)
+
+    mock_run = _make_dual_mock(git_diff_output="p.py\n", compiled_content=content)
+
+    code, _ = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 0
+    # First git call is fetch, second is diff
+    fetch_cmd = mock_run.call_args_list[0][0][0]
+    assert fetch_cmd == ["git", "fetch", "origin", "main"]
+    diff_cmd = mock_run.call_args_list[1][0][0]
+    assert "origin/main...HEAD" in diff_cmd
+
+
+def test_modified_only_without_github_base_ref_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without GITHUB_BASE_REF, --modified-only exits 1 with a clear error."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    _make_pipeline_map(tmp_path)
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            modified_only=True,
+        ),
+    )
+    assert code == 1
+    assert "GITHUB_BASE_REF" in out
+    assert "pull_request" in out
+
+
+def test_git_diff_failure_exits_nonzero(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When git diff returns non-zero, exit 1 with error message."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    _make_pipeline_map(tmp_path)
+
+    mock_run = _make_dual_mock(
+        git_diff_output="",
+        compiled_content="",
+        git_diff=(128, "fatal: bad revision"),
+    )
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 1
+    assert "git diff failed" in out
+
+
+def test_git_fetch_failure_exits_nonzero(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When git fetch fails, exit 1 with error message."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_BASE_REF", "main")
+    _make_pipeline_map(tmp_path)
+
+    mock_run = _make_dual_mock(
+        git_diff_output="",
+        compiled_content="",
+        git_fetch=(128, "fatal: could not fetch"),
+    )
+
+    code, out = _run_main(
+        "map.json",
+        RunConfig(
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+            modified_only=True,
+        ),
+    )
+    assert code == 1
+    assert "git fetch failed" in out
 
 
 # ----- Optional integration test (real kfp via uv workspace) -----
@@ -402,7 +656,7 @@ def test_real_kfp_compile_up_to_date(tmp_path: Path) -> None:
     map_file.write_text(json.dumps({pipeline_py.name: out_yaml.name}))
 
     run_result = _uv_run_integration(
-        tmp_path, "python", str(SCRIPT), "map.json"
+        tmp_path, "python", str(SCRIPT), "--map-file", "map.json"
     )
     assert run_result.returncode == 0
     assert "up to date" in run_result.stdout

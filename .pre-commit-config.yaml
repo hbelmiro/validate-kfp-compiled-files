@@ -8,12 +8,6 @@ repos:
         language: system
         pass_filenames: false
 
-      - id: pytest
-        name: pytest
-        entry: uv run pytest -v
-        language: system
-        pass_filenames: false
-
       - id: ty
         name: ty check
         entry: uv run ty check

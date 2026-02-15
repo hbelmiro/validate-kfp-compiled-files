@@ -7,8 +7,10 @@ Exits with 1 on first mismatch or missing file.
 
 from __future__ import annotations
 
+import argparse
 import difflib
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -60,7 +62,7 @@ def _print_out_of_date_fix_command(
     yaml_file: str,
     expected_lines: list[str],
     actual_lines: list[str],
-    extra_compile_args_str: str,
+    compile_args_str: str,
 ) -> None:
     """Print diff and the suggested kfp compile command."""
     print(f"❌ {yaml_file} is out of date with {py_file}")
@@ -74,8 +76,8 @@ def _print_out_of_date_fix_command(
         print(line)
     print("   → update by running:")
     extra = ""
-    if extra_compile_args_str:
-        extra_parts = shlex.split(extra_compile_args_str)
+    if compile_args_str:
+        extra_parts = shlex.split(compile_args_str)
         extra = "  ".join(shlex.quote(arg) for arg in extra_parts)
     cmd_help = (
         f"     kfp dsl compile --py {shlex.quote(py_file)} "
@@ -89,7 +91,7 @@ def _check_one(
     yaml_file: str,
     compiled_path: Path,
     extra_args: list[str],
-    extra_compile_args_str: str,
+    compile_args_str: str,
 ) -> None:
     """Compile py_file, diff to yaml_file; raise error on failure."""
     print(f"→ Checking {py_file} → {yaml_file}")
@@ -109,7 +111,7 @@ def _check_one(
             yaml_file,
             expected_lines,
             actual_lines,
-            extra_compile_args_str,
+            compile_args_str,
         )
         raise RuntimeError(f"❌ {yaml_file} is out of date with {py_file}")
 
@@ -157,19 +159,139 @@ def _load_and_validate_mapping(map_file: str) -> dict:
     return cast(dict, mapping)
 
 
-def main() -> int:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Validate that KFP .py files are compiled to their .yaml counterparts.",
+    )
+    parser.add_argument(
+        "--map-file",
+        default=".github/kfp-pipelines-map.json",
+        help="Path to JSON mapping file (py -> yaml)",
+    )
+    parser.add_argument(
+        "--compile-args",
+        default="",
+        help="Extra arguments to pass to kfp dsl compile",
+    )
+    parser.add_argument(
+        "--modified-only",
+        action="store_true",
+        help="Only validate entries whose files are Git-modified",
+    )
+    return parser.parse_args(argv)
+
+
+def _normalize_base_branch(base_branch: str) -> str:
+    """Qualify a bare branch name with 'origin/' so fetch and diff use the same ref."""
+    if "/" not in base_branch:
+        return f"origin/{base_branch}"
+    return base_branch
+
+
+def _resolve_base_branch() -> str:
+    """Read the PR target branch from ``GITHUB_BASE_REF``.
+
+    ``GITHUB_BASE_REF`` is set by GitHub Actions on ``pull_request``
+    events and contains the **bare** branch name (e.g. ``main`` or
+    ``develop``), without a remote prefix.  The value is returned
+    as-is; callers that need a remote-qualified ref (``origin/main``)
+    should pass it through :func:`_normalize_base_branch`.
+
+    Raises ``RuntimeError`` when the variable is unset or empty
+    (i.e. the workflow is not running on a ``pull_request`` event).
+    """
+    ref = os.environ.get("GITHUB_BASE_REF", "").strip()
+    if not ref:
+        raise RuntimeError(
+            "❌ --modified-only requires GITHUB_BASE_REF environment variable "
+            "(set automatically on pull_request events)"
+        )
+    return ref
+
+
+def _fetch_base_branch(base_branch: str) -> None:
+    """Fetch the base branch so it is available for git diff.
+
+    *base_branch* must already be remote-qualified (e.g. ``origin/main``).
+    """
+    if "/" not in base_branch:
+        raise RuntimeError(
+            f"❌ base_branch must be remote-qualified (e.g. 'origin/main'), got: {base_branch!r}"
+        )
+    remote, branch = base_branch.split("/", 1)
+    cmd = ["git", "fetch", remote, branch]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            "❌ git is not installed or not on PATH"
+        ) from e
+    if result.returncode != 0:
+        error_msg = f"❌ git fetch failed for {base_branch}"
+        if result.stderr:
+            error_msg += f"\n{result.stderr}"
+        raise RuntimeError(error_msg)
+
+
+def _get_git_modified_files(base_branch: str) -> set[str]:
+    """Return the set of file paths modified between *base_branch* and HEAD."""
+    normalized = _normalize_base_branch(base_branch)
+    _fetch_base_branch(normalized)
+    cmd = ["git", "diff", "--name-only", f"{normalized}...HEAD"]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            "❌ git is not installed or not on PATH"
+        ) from e
+    if result.returncode != 0:
+        error_msg = "❌ git diff failed"
+        if result.stderr:
+            error_msg += f"\n{result.stderr}"
+        raise RuntimeError(error_msg)
+    return {line for line in result.stdout.splitlines() if line}
+
+
+def _filter_mapping_by_modified_files(
+    mapping: dict[str, str], modified_files: set[str]
+) -> dict[str, str]:
+    """Keep only mapping entries where py_file or yaml_file is in modified_files."""
+    return {
+        py_file: yaml_file
+        for py_file, yaml_file in mapping.items()
+        if py_file in modified_files or yaml_file in modified_files
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
     """Validate each py→yaml pair from the map file; return 1 on first failure, 0 on success."""
-    map_file = sys.argv[1] if len(sys.argv) > 1 else ".github/kfp-pipelines-map.json"
-    extra_compile_args_str = sys.argv[2] if len(sys.argv) > 2 else ""
-    extra_args = shlex.split(extra_compile_args_str) if extra_compile_args_str else []
+    args = _parse_args(argv)
+    map_file = args.map_file
+    compile_args_str = args.compile_args
+    extra_args = shlex.split(compile_args_str) if compile_args_str else []
 
     try:
         mapping = _load_and_validate_mapping(map_file)
 
+        if args.modified_only:
+            base_branch = _resolve_base_branch()
+            modified_files = _get_git_modified_files(base_branch)
+            mapping = _filter_mapping_by_modified_files(mapping, modified_files)
+            if not mapping:
+                print("ℹ️ No modified files match the pipeline map; nothing to validate.")
+                return 0
+            entry_word = "entry" if len(mapping) == 1 else "entries"
+            print(f"ℹ️ Validating {len(mapping)} pipeline map {entry_word} (modified only).")
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             compiled = Path(tmp_dir) / "tmp.yaml"
             for py_file, yaml_file in mapping.items():
-                _check_one(py_file, yaml_file, compiled, extra_args, extra_compile_args_str)
+                _check_one(py_file, yaml_file, compiled, extra_args, compile_args_str)
 
         return 0
     except RuntimeError as e:

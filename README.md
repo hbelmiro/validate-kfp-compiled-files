@@ -27,11 +27,12 @@ and run the verifier—**you do not need uv** or any other tool in your repo.
 
 ## 📦 Inputs
 
-| Name                 | Description                             | Required   |
-|----------------------|-----------------------------------------|------------|
-| `pipelines-map-file` | Path to JSON mapping `.py` ➝ `.yaml`    | Yes        |
-| `requirements-file`  | Path to `requirements.txt` for `kfp`    | Yes        |
-| `extra-compile-args` | Extra args for `kfp dsl compile` (opt.) | No         |
+| Name                 | Description                                                                            | Required | Type    | Default |
+|----------------------|----------------------------------------------------------------------------------------|----------|---------|---------|
+| `pipelines-map-file` | JSON mapping `.py` ➝ `.yaml`                                                           | Yes      | string  | —       |
+| `requirements-file`  | `requirements.txt` for `kfp`                                                           | Yes      | string  | —       |
+| `compile-args`       | Extra args for `kfp dsl compile`                                                       | No       | string  | `""`    |
+| `modified-only`      | Only validate entries whose `.py` or `.yaml` was modified (requires PR/commit context) | No       | boolean | `false` |
 
 ---
 
@@ -61,7 +62,44 @@ jobs:
         with:
           pipelines-map-file: './.github/pipelines-map.json'
           requirements-file: './pipeline/requirements.txt'
-          extra-compile-args: '--some-kfp-flag value'
+          compile-args: '--some-kfp-flag value'
+```
+
+### Validate Only Modified Files
+
+Set `modified-only: 'true'` to validate only the pipeline-map entries whose
+`.py` or `.yaml` file was touched in the pull request. This can significantly
+speed up CI for repositories with many pipelines.
+
+**How it works:**
+
+1. The action reads the PR base branch from the `GITHUB_BASE_REF` environment
+   variable (set automatically by GitHub on `pull_request` events).
+2. It fetches the base branch and runs `git diff --name-only` between the
+   base and `HEAD` to determine which files changed.
+3. Only pipeline-map entries where the `.py` **or** the `.yaml` file appears
+   in the diff are compiled and validated.
+4. If none of the mapped files were modified, validation **passes
+   automatically** with an informational message — no compilation is
+   performed.
+
+```yaml
+on: pull_request
+
+jobs:
+  validate-kfp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Validate compiled pipelines
+        uses: hbelmiro/validate-kfp-compiled-files@<commit-sha>
+        with:
+          pipelines-map-file: './.github/pipelines-map.json'
+          requirements-file: './pipeline/requirements.txt'
+          compile-args: '--some-kfp-flag value'
+          modified-only: 'true'
 ```
 
 ---
