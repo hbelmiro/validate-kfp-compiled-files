@@ -158,7 +158,7 @@ def _run_main(map_path: str | None = None, config: RunConfig | None = None) -> t
     if map_path is not None:
         argv.extend(["--map-file", map_path])
     if config.extra_args:
-        argv.extend(["--compile-args", config.extra_args])
+        argv.append(f"--compile-args={config.extra_args}")
     if config.modified_only:
         argv.append("--modified-only")
 
@@ -351,6 +351,53 @@ def test_extra_args_passed_to_kfp(
     call_args = mock_run.call_args[0][0]
     assert "--pipeline-root" in call_args
     assert "s3://bucket" in call_args
+
+
+def test_compile_args_starting_with_dashes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--compile-args accepts values that start with dashes (e.g. --some-flag)."""
+    monkeypatch.chdir(tmp_path)
+    content = "a: 1\n"
+    _make_pipeline_map(tmp_path, yaml_content=content)
+
+    mock_run = MagicMock(side_effect=_fake_kfp_run(content))
+    code, _ = _run_main(
+        "map.json",
+        RunConfig(
+            extra_args="--disable-execution-caching-by-default",
+            monkeypatch=monkeypatch,
+            mock_subprocess_run=mock_run,
+        ),
+    )
+    assert code == 0
+    call_args = mock_run.call_args[0][0]
+    assert "--disable-execution-caching-by-default" in call_args
+
+
+def test_compile_args_with_dashes_via_equals_syntax(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--compile-args=<value> works even when value starts with dashes."""
+    monkeypatch.chdir(tmp_path)
+    content = "a: 1\n"
+    _make_pipeline_map(tmp_path, yaml_content=content)
+
+    mock_run = MagicMock(side_effect=_fake_kfp_run(content))
+
+    stdout_capture = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", stdout_capture)
+
+    with patch("verify_kfp_compiled.subprocess.run", mock_run):
+        code = verify_kfp_compiled.main([
+            "--map-file", "map.json",
+            "--compile-args=--disable-execution-caching-by-default",
+        ])
+    assert code == 0
+    call_args = mock_run.call_args[0][0]
+    assert "--disable-execution-caching-by-default" in call_args
 
 
 # ----- Git-modified-only tests -----

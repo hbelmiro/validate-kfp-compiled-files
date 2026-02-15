@@ -26,4 +26,4 @@ runs:
 
     - name: Verify compiled pipelines
       shell: bash
-      run: python "${{ github.action_path }}/verify_kfp_compiled.py" --map-file "${{ inputs.pipelines-map-file }}" --compile-args "${{ inputs.compile-args || '' }}" ${{ inputs.modified-only == 'true' && '--modified-only' || '' }}
+      run: python "${{ github.action_path }}/verify_kfp_compiled.py" --map-file "${{ inputs.pipelines-map-file }}" "--compile-args=${{ inputs.compile-args || '' }}" ${{ inputs.modified-only == 'true' && '--modified-only' || '' }}
