@@ -9,7 +9,7 @@
 
 - Run all checks before considering work done:
   - `uv run pytest -v`
-  - `uv run pylint .`
+  - `uv run ruff check .`
   - `uv run ty check`
   - `npx markdownlint-cli2 '**/*.md'`
 

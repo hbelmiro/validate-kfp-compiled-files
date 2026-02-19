@@ -111,7 +111,7 @@ This repo uses [uv](https://docs.astral.sh/uv/) for Python tooling.
 - Install dependencies (including dev): `uv sync --all-groups`
 - Run tests: `uv run pytest -v`
 - Test coverage: `uv run pytest --cov --cov-report=term-missing -m "not integration"`
-- Lint: `uv run pylint .`
+- Lint: `uv run ruff check .`
 - Type check: `uv run ty check`
 - Check lock file: `uv lock --check`
 - Optional integration test (workspace `tests/integration`, pinned kfp):

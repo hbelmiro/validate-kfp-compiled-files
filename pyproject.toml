@@ -11,8 +11,7 @@ members = ["tests/integration"]
 [dependency-groups]
 # Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
 lint = [
-  "pylint==3.3.9; python_version < '3.10'",
-  "pylint==4.0.4; python_version >= '3.10'",
+  "ruff==0.15.1",
   "ty==0.0.17",
 ]
 test = [
@@ -46,5 +45,5 @@ exclude_lines = [
 ]
 show_missing = true
 
-[tool.pylint.main]
-ignore-paths = [".venv", "tests/integration"]
+[tool.ruff]
+target-version = "py39"
