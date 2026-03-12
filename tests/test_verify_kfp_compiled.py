@@ -1,5 +1,7 @@
 """Tests for verify_kfp_compiled.py."""
 
+from __future__ import annotations
+
 import io
 import json
 import subprocess
