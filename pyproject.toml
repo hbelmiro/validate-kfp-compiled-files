@@ -12,7 +12,7 @@ members = ["tests/integration"]
 # Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
 lint = [
   "ruff==0.15.6",
-  "ty==0.0.23",
+  "ty==0.0.24",
 ]
 test = [
   "pytest",
