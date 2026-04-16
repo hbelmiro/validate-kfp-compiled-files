@@ -45,9 +45,11 @@ jobs:
       - name: Commit updated requirements.txt
         if: steps.check_changes.outputs.changed == 'true'
         shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "Dependabot Requirements Updater"
           git add tests/integration/requirements.txt
           git commit -m "Auto-update integration requirements.txt"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin "HEAD:${HEAD_REF}"
