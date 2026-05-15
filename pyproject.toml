@@ -9,7 +9,7 @@ requires-python = ">=3.9"
 members = ["tests/integration"]
 
 [tool.uv]
-constraint-dependencies = ["kfp==2.14.3"]
+constraint-dependencies = ["kfp==2.16.1"]
 
 [dependency-groups]
 # Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
