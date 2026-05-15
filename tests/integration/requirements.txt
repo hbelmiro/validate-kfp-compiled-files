@@ -339,9 +339,9 @@ kfp==2.14.3 \
     --hash=sha256:512c10d344b0efa0a18b342f86b56bb6ef0ccfb82f275ded51fdeb2a3ad4f199 \
     --hash=sha256:53683dc31793f36391d35d711060f60d006a8f51b92d2c7debce13af8ebeba3b
     # via integration-env
-kfp-pipeline-spec==2.14.0 \
-    --hash=sha256:569cee7743e7d99dc94fd4a8f33f292ef2e49bfd9a28d11833f2c6af3135f389 \
-    --hash=sha256:8fb59236cf6d8ea715d2aa6caa2242554eeeed7f196d4e226b99d9700e0e7a7b
+kfp-pipeline-spec==2.16.1 \
+    --hash=sha256:0b0719a828a48c2ff081e6cf6517531907231afadcfbbee0e6b2ea419bcbe634 \
+    --hash=sha256:c6873c4362e8d227cd900e7e186ac9d2cdd2d492e9baa905d52d78452b7c2b65
     # via kfp
 kfp-server-api==2.16.1 \
     --hash=sha256:19a80adcfe2d3666522ed164baeafe86a48ce25ee7fce9d93bb6457339120abd
