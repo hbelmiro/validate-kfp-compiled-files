@@ -14,6 +14,7 @@ members = [
     "integration-env",
     "validate-kfp-compiled-files",
 ]
+constraints = [{ name = "kfp", specifier = "==2.14.3" }]
 
 [[package]]
 name = "certifi"
@@ -840,7 +841,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kfp", specifier = "==2.14.3" }]
+requires-dist = [{ name = "kfp" }]
 
 [[package]]
 name = "kfp"
