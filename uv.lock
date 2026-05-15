@@ -14,7 +14,7 @@ members = [
     "integration-env",
     "validate-kfp-compiled-files",
 ]
-constraints = [{ name = "kfp", specifier = "==2.14.3" }]
+constraints = [{ name = "kfp", specifier = "==2.16.1" }]
 
 [[package]]
 name = "certifi"
@@ -845,7 +845,7 @@ requires-dist = [{ name = "kfp" }]
 
 [[package]]
 name = "kfp"
-version = "2.14.3"
+version = "2.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -863,21 +863,21 @@ dependencies = [
     { name = "tabulate" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/29/72/703eea47d80adc13a7b7086030dd382e10605ca64b876f77615103a3df63/kfp-2.14.3.tar.gz", hash = "sha256:53683dc31793f36391d35d711060f60d006a8f51b92d2c7debce13af8ebeba3b", size = 275297, upload-time = "2025-08-28T20:46:27.997Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/d8/4b72f7ffaf8918f629873766db81d444c7dd65a2c7342829b7b9df3d0cc3/kfp-2.16.1.tar.gz", hash = "sha256:67fffff19960bb4624836d1ee0a4449e6e326092646883f7d57e9d1cc402bce2", size = 317570, upload-time = "2026-05-05T13:47:52.389Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/78/d20d15ccf2645557440d44fc85a22be85091b47b5c0fc508bdb5f29cac59/kfp-2.14.3-py3-none-any.whl", hash = "sha256:512c10d344b0efa0a18b342f86b56bb6ef0ccfb82f275ded51fdeb2a3ad4f199", size = 374049, upload-time = "2025-08-28T20:46:25.951Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/64/c2393ab7410017cefd5fd5693811a77d7d55d5b02faf09a9e6402c4d187c/kfp-2.16.1-py3-none-any.whl", hash = "sha256:d90742de35d1fee871240ddf619b29f5c25103f522eddaf97d2b24cb2483d3ba", size = 421579, upload-time = "2026-05-05T13:47:50.588Z" },
 ]
 
 [[package]]
 name = "kfp-pipeline-spec"
-version = "2.14.0"
+version = "2.16.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/01/0d/eda38b032354f61ec1dfd6fa9b7e80c030392fd5de959a75a1fbb4575d20/kfp_pipeline_spec-2.14.0.tar.gz", hash = "sha256:8fb59236cf6d8ea715d2aa6caa2242554eeeed7f196d4e226b99d9700e0e7a7b", size = 9849, upload-time = "2025-08-04T20:11:11.196Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/8e/1844e0a11fefe77c86f6fc0d0ea463b338111d914515b930ff86be65a281/kfp_pipeline_spec-2.16.1.tar.gz", hash = "sha256:0b0719a828a48c2ff081e6cf6517531907231afadcfbbee0e6b2ea419bcbe634", size = 10573, upload-time = "2026-05-05T13:46:36.558Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/ab/327af362b1dd1cb4fd0709381a364ce2fe25a87a7507d18f7df3ccb91738/kfp_pipeline_spec-2.14.0-py3-none-any.whl", hash = "sha256:569cee7743e7d99dc94fd4a8f33f292ef2e49bfd9a28d11833f2c6af3135f389", size = 9551, upload-time = "2025-08-04T20:11:10.32Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/ca/7aab754c26e3cdb6dedc718bbb0d9d76600229bbc1cd008143db6fd62ec1/kfp_pipeline_spec-2.16.1-py3-none-any.whl", hash = "sha256:c6873c4362e8d227cd900e7e186ac9d2cdd2d492e9baa905d52d78452b7c2b65", size = 9866, upload-time = "2026-05-05T13:46:35.055Z" },
 ]
 
 [[package]]
