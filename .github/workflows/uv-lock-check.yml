@@ -17,8 +17,11 @@ jobs:
 
       - name: Check lock file
         uses: hbelmiro/uv-lock-check@5e383ca4a558c5c8b39c577601d7c71e7d9290dd # v0.3.0
+        with:
+          show-diff: 'true'
 
       - name: Check integration requirements sync
         uses: hbelmiro/uv-lock-check@5e383ca4a558c5c8b39c577601d7c71e7d9290dd # v0.3.0
         with:
           command: uv export --package integration-env --format requirements-txt --no-emit-project -o tests/integration/requirements.txt
+          show-diff: 'true'
