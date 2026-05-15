@@ -10,9 +10,7 @@ updates:
 
   # Python (uv: pyproject.toml + uv.lock + workspace members)
   - package-ecosystem: "uv"
-    directories:
-      - "/"
-      - "/tests/integration"
+    directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
