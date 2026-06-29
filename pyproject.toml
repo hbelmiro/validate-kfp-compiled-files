@@ -15,7 +15,7 @@ constraint-dependencies = ["kfp==2.16.1"]
 # Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
 lint = [
   "ruff==0.15.20",
-  "ty==0.0.54",
+  "ty==0.0.55",
 ]
 test = [
   "pytest",
