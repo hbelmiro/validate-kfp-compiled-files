@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Validate that Kubeflow Pipelines .py files are compiled to their .yaml counterparts.
 Reads a JSON map (py_path -> yaml_path), compiles each .py with kfp, and diffs to the .yaml.
@@ -134,14 +133,14 @@ def _load_json_map(map_path: Path, map_file: str) -> object:
 def _validate_mapping_entries(mapping: object) -> None:
     """Check mapping is a dict with string keys and values; raise error on failure."""
     if not isinstance(mapping, dict):
-        raise RuntimeError(
+        raise TypeError(
             f"❌ Pipeline map must be a JSON object (py -> yaml), "
             f"got {type(mapping).__name__}"
         )
     for py_file, yaml_file in mapping.items():
         if not isinstance(py_file, str) or not isinstance(yaml_file, str):
             bad = "key" if not isinstance(py_file, str) else "value"
-            raise RuntimeError(
+            raise TypeError(
                 f"❌ Pipeline map entries must be strings (py -> yaml), "
                 f"got non-string {bad}"
             )
@@ -294,7 +293,7 @@ def main(argv: list[str] | None = None) -> int:
                 _check_one(py_file, yaml_file, compiled, extra_args, compile_args_str)
 
         return 0
-    except RuntimeError as e:
+    except (RuntimeError, TypeError) as e:
         print(e)
         return 1
 
