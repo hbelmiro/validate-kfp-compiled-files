@@ -3,13 +3,13 @@ name = "validate-kfp-compiled-files"
 version = "0.2.0"
 description = "Validate that Kubeflow Pipelines .py files are compiled to their .yaml counterparts"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [tool.uv.workspace]
 members = ["tests/integration"]
 
 [tool.uv]
-constraint-dependencies = ["kfp==2.16.1"]
+constraint-dependencies = ["kfp>=2.17.0"]
 
 [dependency-groups]
 # Lint deps are pinned to avoid new checks or behavior breaking CI (versions from uv.lock).
