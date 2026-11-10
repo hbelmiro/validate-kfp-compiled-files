@@ -3,6 +3,7 @@ version: 2
 updates:
   # GitHub Actions
   - package-ecosystem: "github-actions"
+    milestone: 4
     directory: "/"
     schedule:
       interval: "daily"
@@ -10,6 +11,7 @@ updates:
 
   # Python (uv: pyproject.toml + uv.lock + workspace members)
   - package-ecosystem: "uv"
+    milestone: 4
     directory: "/"
     schedule:
       interval: "weekly"
